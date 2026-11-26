@@ -24,6 +24,11 @@ on:
       - .github/workflows/basalt-image.yml
       - .github/renovate/basalt-pins.mjs
       - renovate.json
+  # On-demand rebuild (a push that touches .github/workflows/* does not trigger
+  # that workflow - GitHub's workflow-file-modification guard - so a rebuild
+  # after a workflow edit, or a rebuild without a pin move, is dispatched by
+  # hand).
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -50,7 +55,7 @@ jobs:
           echo "commit=${commit}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to ghcr
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io --username __bot__ --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
 
       # The build is self-verifying: the tarball's sha256sum -c and the entry-point
       # self-check run inside it, so a poisoned digest or a replaced asset fails here.

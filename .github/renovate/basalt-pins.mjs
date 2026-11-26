@@ -19,11 +19,15 @@
 // The postUpgradeTask working directory is the repository root, so the
 // default path (the Dockerfile at the repo root) is relative to it.
 //
-// If the task is ever allowlisted on a self-hosted/enterprise Renovate, add
-// installTools: {node: {}} to the postUpgradeTasks entry (plus constraints:
-// {node: "^22"} to pin the version - the tool objects expose no
-// configurability, versioning goes through constraints) - the self-hosted
-// slim image lacks node, while Mend-hosted ships it.
+// Node version: the script needs node >= 18 (top-level await, global fetch,
+// AbortSignal.timeout - it uses fetch + AbortSignal.timeout(30_000)); the
+// GitHub runner's node satisfies it (the workflow's `node --check` step runs
+// it), and Mend-hosted Renovate ships node with its runner. On a
+// self-hosted/enterprise runner, installTools: {node: {}} (already declared
+// in renovate.json's postUpgradeTasks entry) fetches node, since the slim
+// self-hosted image lacks it. The tool objects take no version, so pinning
+// the runner's node is a constraints matter (constraints.node), not an
+// installTools one.
 
 import { readFile, writeFile } from "node:fs/promises";
 

@@ -89,8 +89,15 @@ paid-plan minutes:
   to master - roughly one ~15-30 min build per release (the CUDA runtime base
   plus the ~170 MB tarball), so on the order of a few hundred billed
   minutes a month at the current release cadence.
-- The `postUpgradeTask` runs on the host's self-hosted renovate runner image
-  (no CI minutes).
+- The `postUpgradeTask` runs outside the repo's CI (no CI minutes). On
+  hosted Mend Renovate node ships with the runner, but arbitrary commands
+  are blocked unless allowlisted - so by default the pin-filling script
+  never runs there: every release bump needs `BASALT_COMMIT` +
+  `BASALT_SHA256` filled by hand in the PR, and the CI build check is the
+  gate (it fails the PR while the pins are stale). If the task runs on a
+  self-hosted/enterprise Renovate runner instead, `installTools: {node: {}}`
+  in the postUpgradeTasks entry fetches node there, since the slim
+  self-hosted image lacks it.
 
 ## Pulling the image
 
