@@ -24,10 +24,8 @@ on:
       - .github/workflows/basalt-image.yml
       - .github/renovate/basalt-pins.mjs
       - renovate.json
-  # On-demand rebuild (a push that touches .github/workflows/* does not trigger
-  # that workflow - GitHub's workflow-file-modification guard - so a rebuild
-  # after a workflow edit, or a rebuild without a pin move, is dispatched by
-  # hand).
+  # Manual rebuild / re-publish of a tag without a commit (e.g. a redo after
+  # a pinned upstream release moved).
   workflow_dispatch:
 
 permissions:
