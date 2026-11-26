@@ -1,0 +1,82 @@
+name: Basalt image
+
+# The basalt image is built here and published to ghcr.io/trollaus/basalt-image; the ansible role
+# (trollaus/infra-ansible, roles/containers/basalt) pulls a digest-pinned reference and
+# never builds on the host. This is the gate: the build runs the Dockerfile's own checks -
+# the release tarball's `sha256sum -c` against BASALT_SHA256, the entry-point self-check
+# (bin/basalt present and executable, requirements.txt at the tree root), and the pip install
+# of the tarball's own pinned requirements - so a stale pin (a version moved, the
+# companion pins stale) or a replaced release asset fails the PR before the image is
+# published, not the deploy. Triggered when the Dockerfile or this pipeline's own files
+# change (the workflow especially, since it enforces everything else), so it never runs
+# on unrelated PRs.
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - .github/workflows/basalt-image.yml
+      - .github/renovate/basalt-pins.mjs
+      - renovate.json
+  push:
+    branches: [master]
+    paths:
+      - Dockerfile
+      - .github/workflows/basalt-image.yml
+      - .github/renovate/basalt-pins.mjs
+      - renovate.json
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Syntax-check the postUpgradeTask script
+        run: node --check .github/renovate/basalt-pins.mjs
+
+      - name: Read the pins
+        id: pins
+        run: |
+          # The upstream basalt commit is the image tag; the digest step prints the
+          # registry manifest digest the host_vars bump line is pinned with.
+          commit=$(grep -oP '^ARG BASALT_COMMIT=\K\S+' Dockerfile)
+          echo "commit=${commit}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to ghcr
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io --username __bot__ --password-stdin
+
+      # The build is self-verifying: the tarball's sha256sum -c and the entry-point
+      # self-check run inside it, so a poisoned digest or a replaced asset fails here.
+      - name: Build the basalt image
+        run: docker build --pull -f Dockerfile -t "ghcr.io/trollaus/basalt-image:sha-$(echo "${{ steps.pins.outputs.commit }}" | cut -c1-12)" .
+
+      - name: Push the basalt image
+        if: github.event_name == 'push'
+        run: |
+          docker push "ghcr.io/trollaus/basalt-image:sha-$(echo "${{ steps.pins.outputs.commit }}" | cut -c1-12)"
+
+      # On master only: the `latest` tag (a convenience tag; the role pins by digest).
+      - name: Tag and push latest
+        if: github.ref == 'refs/heads/master'
+        run: |
+          docker tag "ghcr.io/trollaus/basalt-image:sha-$(echo "${{ steps.pins.outputs.commit }}" | cut -c1-12)" ghcr.io/trollaus/basalt-image:latest
+          docker push ghcr.io/trollaus/basalt-image:latest
+
+      # The manifest digest the host_vars bump line is pinned with: after the push the
+      # local image carries the registry digests, and RepoDigests[0] of the just-pushed
+      # sha-<commit> reference is ghcr.io/trollaus/basalt-image@sha256:<manifest>.
+      - name: Print the image digest
+        if: github.event_name == 'push'
+        run: |
+          ref="ghcr.io/trollaus/basalt-image:sha-$(echo "${{ steps.pins.outputs.commit }}" | cut -c1-12)"
+          digest=$(docker image inspect --format '{{index .RepoDigests 0}}' "$ref")
+          digest=${digest#*@}
+          # The host_vars bump line (juhovan/infra, the LLM host's `basalt.image`):
+          echo "basalt.image: ${ref}@${digest}"

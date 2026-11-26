@@ -1,0 +1,31 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":disableRateLimiting",
+    "customManagers:dockerfileVersions",
+    "customManagers:githubActionsVersions"
+  ],
+  "timezone": "Europe/Helsinki",
+  "semanticCommits": "disabled",
+  "packageRules": [
+    {
+      "description": "The basalt release tag (BASALT_VERSION, a Dockerfile ARG with a `# renovate: datasource=github-releases depName=jesdga95/basalt` comment) is the only thing Renovate tracks; a postUpgradeTask fills the two companion pins (BASALT_COMMIT, the image's tag; BASALT_SHA256, the tarball's digest) after the bump. No schedule cap: jesdga95/basalt is a per-release pipeline (a handful of releases a month, 12 in the last ~4 weeks, incl. v0.5.6 -> v0.5.7 in one day), and per-release builds are acceptable - each bump PR costs one ~15-30 min docker build + push of the org's paid-plan CI minutes (see README, 'Cost model'); if the cadence ever multiplies, add a weekly schedule cap like trollaus/abyss-image has. The task is best-effort: hosted Mend Renovate blocks arbitrary postUpgradeTask commands unless they are allowlisted (docs.renovatebot.com/mend-hosted/faq, \"How can I run arbitrary commands\"), so the CI build check (.github/workflows/basalt-image.yml) is the enforcement: the tarball verifies against the hard-coded SHA-256 inside the build.",
+      "matchPackageNames": [
+        "jesdga95/basalt"
+      ],
+      "postUpgradeTasks": {
+        "commands": [
+          "node .github/renovate/basalt-pins.mjs"
+        ],
+        "installTools": {
+          "node": {}
+        }
+      },
+      "prBodyNotes": [
+        "\u26a0\ufe0f The `BASALT_COMMIT` and `BASALT_SHA256` pins in `Dockerfile` are auto-filled by the postUpgradeTask (`.github/renovate/basalt-pins.mjs`): it reads the bumped `BASALT_VERSION`, resolves the tag's commit and the release asset's `sha256` digest, and rewrites the two ARGs in place. The task only runs where the command is allowlisted - hosted Mend blocks arbitrary commands - so if the pins are still stale in this PR, the CI build check (`.github/workflows/basalt-image.yml`) is the enforcement: the PR must not pass it while the tarball's `sha256sum -c` fails on the stale digest. If the build fails on the pip pins (the tarball's own `requirements.txt`), the new release's artifact layout changed - check the tarball's contents against the entry-point self-check in the Dockerfile and fix the pins in the same PR.",
+        "After merge, CI publishes `ghcr.io/trollaus/basalt-image:sha-<BASALT_COMMIT short>` (plus `latest` on master) and prints the image digest at the end of the run. Update flow: copy that digest line into the role's image reference (`basalt.image`, documented in the role's README in trollaus/infra-ansible) in juhovan/infra host_vars, then deploy `--tags basalt`."
+      ]
+    }
+  ]
+}
