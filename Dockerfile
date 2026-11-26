@@ -1,9 +1,9 @@
 # Basalt engine (github.com/jesdga95/basalt, MIT) + its Python server, for LLM
 # inference on NVIDIA Blackwell GPUs (sm_120).
 #
-# The image is published by this repo's CI (.github/workflows/basalt-image.yml) and pulled by
-# the ansible role (trollaus/infra-ansible, roles/containers/basalt), which pins the reference
-# in host vars. The three ARGs below are the single source of truth for what is in the image;
+# The image is published by this repo's CI (.github/workflows/basalt-image.yml) and
+# pulled by the consuming side - e.g. an ansible container role - which pins
+# the reference in its host vars. The three ARGs below are the single source of truth for what is in the image;
 # a rebuild is what the pins describe.
 #
 # BASALT_VERSION (a jesdga95/basalt release tag) is tracked by renovate.json (datasource

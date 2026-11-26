@@ -1,7 +1,8 @@
 # trollaus/basalt-image
 
-The Docker image for the `basalt` role in [trollaus/infra-ansible](https://github.com/trollaus/infra-ansible)
-(`roles/containers/basalt`). The image is a repackaging of the upstream
+The Docker image consumed by a `basalt` ansible container role - the role
+pulls a digest-pinned reference of this image and never builds on the host.
+The image is a repackaging of the upstream
 [jesdga95/basalt](https://github.com/jesdga95/basalt) release artifact - no
 custom code: the engine binary and its Python server are the release's
 prebuilt `linux-x64` tarball (SHA-256-verified), and the Python venv is the
@@ -36,7 +37,7 @@ new jesdga95/basalt release
   -> merge: CI publishes ghcr.io/trollaus/basalt-image:sha-<BASALT_COMMIT short>
      (plus :latest on master) and prints the image digest
   -> one-line digest bump of the role's image reference (basalt.image in
-     juhovan/infra host_vars) -> deploy --tags basalt
+     the parent repo's host_vars) -> deploy --tags basalt
 ```
 
 The build is self-verifying on every run: a moved tag or a replaced release
@@ -61,9 +62,9 @@ Updates are driven by Renovate (default daily schedule, see `renovate.json`):
 3. Merge the PR: CI publishes the image and prints
    `basalt.image: ghcr.io/trollaus/basalt-image:sha-<short>@sha256:<digest>`
    at the end of the run.
-4. Copy that line into the LLM host's host_vars in juhovan/infra
-   (`basalt.image`; the role's README in trollaus/infra-ansible documents
-   the var), and deploy `--tags basalt`.
+4. Copy that line into the host's host_vars in the parent repo
+   (`basalt.image`; the consuming role documents the var), and deploy
+   `--tags basalt`.
 
 Check the tarball's `requirements.txt` (pip pins) against a new release when a
 bump lands (the comment above the `pip install` in the Dockerfile) and bump
@@ -102,10 +103,9 @@ paid-plan minutes:
 ## Pulling the image
 
 The role pulls `ghcr.io/trollaus/basalt-image:sha-<short>@sha256:<digest>`
-(pinned in host_vars; see the role's README, "Image"). The repo is public,
-so the ghcr package is public by default and the host pulls it anonymously -
-no registry login needed. If the owner ever makes the package private, the
-host pulls it with a registry login under `docker_registry_logins` in the
-parent repo's secret vars (precedent: le-certs, whose pin
-`ghcr.io/trollaus/le-certs` is pulled the same way by the `docker` role
-writing `/root/.docker/config.json`).
+(pinned in host_vars; see the role's README, "Image"). This repo is
+public, so the ghcr package is public by default and the host pulls it
+anonymously - no registry login needed. If the owner ever makes the
+package private, the host pulls it with a registry login (e.g. a
+`docker_registry_logins` entry in the parent repo's secret vars, rendered
+into the host's docker config).

@@ -24,7 +24,7 @@
       },
       "prBodyNotes": [
         "\u26a0\ufe0f The `BASALT_COMMIT` and `BASALT_SHA256` pins in `Dockerfile` are auto-filled by the postUpgradeTask (`.github/renovate/basalt-pins.mjs`): it reads the bumped `BASALT_VERSION`, resolves the tag's commit and the release asset's `sha256` digest, and rewrites the two ARGs in place. The task only runs where the command is allowlisted - hosted Mend blocks arbitrary commands - so if the pins are still stale in this PR, the CI build check (`.github/workflows/basalt-image.yml`) is the enforcement: the PR must not pass it while the tarball's `sha256sum -c` fails on the stale digest. If the build fails on the pip pins (the tarball's own `requirements.txt`), the new release's artifact layout changed - check the tarball's contents against the entry-point self-check in the Dockerfile and fix the pins in the same PR.",
-        "After merge, CI publishes `ghcr.io/trollaus/basalt-image:sha-<BASALT_COMMIT short>` (plus `latest` on master) and prints the image digest at the end of the run. Update flow: copy that digest line into the role's image reference (`basalt.image`, documented in the role's README in trollaus/infra-ansible) in juhovan/infra host_vars, then deploy `--tags basalt`."
+        "After merge, CI publishes `ghcr.io/trollaus/basalt-image:sha-<BASALT_COMMIT short>` (plus `latest` on master) and prints the image digest at the end of the run. Update flow: copy that digest line into the role's image reference (`basalt.image`, documented in the consuming role's README) in the parent repo's host_vars, then deploy the role (e.g. `--tags basalt`)."
       ]
     }
   ]

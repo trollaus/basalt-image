@@ -1,8 +1,8 @@
 name: Basalt image
 
-# The basalt image is built here and published to ghcr.io/trollaus/basalt-image; the ansible role
-# (trollaus/infra-ansible, roles/containers/basalt) pulls a digest-pinned reference and
-# never builds on the host. This is the gate: the build runs the Dockerfile's own checks -
+# The basalt image is built here and published to ghcr.io/trollaus/basalt-image;
+# consumers pull a digest-pinned reference and never build on the host
+# (e.g. an ansible container role). This is the gate: the build runs the Dockerfile's own checks -
 # the release tarball's `sha256sum -c` against BASALT_SHA256, the entry-point self-check
 # (bin/basalt present and executable, requirements.txt at the tree root), and the pip install
 # of the tarball's own pinned requirements - so a stale pin (a version moved, the
@@ -81,5 +81,5 @@ jobs:
           ref="ghcr.io/trollaus/basalt-image:sha-$(echo "${{ steps.pins.outputs.commit }}" | cut -c1-12)"
           digest=$(docker image inspect --format '{{index .RepoDigests 0}}' "$ref")
           digest=${digest#*@}
-          # The host_vars bump line (juhovan/infra, the LLM host's `basalt.image`):
+          # The host_vars bump line for the consuming host (e.g. `basalt.image`):
           echo "basalt.image: ${ref}@${digest}"
