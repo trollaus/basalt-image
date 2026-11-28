@@ -46,7 +46,7 @@
 # basalt-vision sidecar beside itself, so it stays one flat tree at one
 # fixed path (the venv's own scripts name it absolutely).
 
-FROM nvidia/cuda:13.4.3-runtime-ubuntu24.04
+FROM nvidia/cuda:13.5.0-runtime-ubuntu24.04
 # renovate: datasource=github-releases depName=jesdga95/basalt
 ARG BASALT_VERSION=0.5.7
 # The commit the release tag points at: the image is tagged sha-<BASALT_COMMIT short>.
